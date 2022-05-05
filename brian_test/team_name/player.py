@@ -38,8 +38,8 @@ class Player:
         x = np.random.randint(0, self.board_size)
         y = np.random.randint(0, self.board_size)
         while (x, y) in self.board_dict.keys():
-            x = np.random.randint(0, 11)
-            y = np.random.randint(0, 11)
+            x = np.random.randint(0, self.board_size)
+            y = np.random.randint(0, self.board_size)
         return "PLACE", x, y
 
     def turn(self, player, action):
