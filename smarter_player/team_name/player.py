@@ -40,6 +40,8 @@ def find_candidates(current_position):
     return candidates
 
 
+def evaluation(board_dict, board_size):
+
 class Player:
     def __init__(self, player, n):
         """
