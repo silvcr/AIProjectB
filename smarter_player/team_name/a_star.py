@@ -68,10 +68,6 @@ def a_star(start, goal, board_dict, board_size):
         while previous_node != 'Start':
             path.append(previous_node)
             previous_node = closed_dict[previous_node][-1]
-        print(len(path) + 1)
-        for i in range(-1, -len(path) - 1, -1):
-            print(path[i])
-        print(goal)
+        return path
     else:
-        print(0)
-    return
+        return 0

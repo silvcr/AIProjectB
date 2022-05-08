@@ -1,20 +1,20 @@
 import numpy as np
+from team_name.a_star import *
 
 
-
-max_depth = 3
-branching_factor = 2
+max_depth = 2
 min_alpha = -1000000
 max_beta = 1000000
 
 
-def alpha_beta(values, current_depth, index, maximizer, alpha, beta):
+def alpha_beta(values, current_depth, branching_factor, index, maximizer, alpha, beta):
     if current_depth == max_depth:
         return values[index]
     if maximizer:
         best_score = min_alpha
         for i in range(0, branching_factor):
-            score = alpha_beta(values, current_depth + 1, index * branching_factor + i, False, alpha, beta)
+            score = alpha_beta(values, current_depth + 1, branching_factor,
+                               index * branching_factor + i, False, alpha, beta)
             best_score = max(best_score, score)
             alpha = max(best_score, alpha)
             if beta <= alpha:
@@ -23,7 +23,8 @@ def alpha_beta(values, current_depth, index, maximizer, alpha, beta):
     else:
         best_score = max_beta
         for i in range(0, branching_factor):
-            score = alpha_beta(values, current_depth + 1, index * branching_factor + i, True, alpha, beta)
+            score = alpha_beta(values, current_depth + 1, branching_factor,
+                               index * branching_factor + i, True, alpha, beta)
             best_score = min(best_score, score)
             beta = min(beta, best_score)
             if beta <= alpha:
@@ -45,15 +46,31 @@ def second(tile):
     return tile[1]
 
 
-def evaluation(red, blue, board_size):
+def evaluation(red, blue, board_dict, board_size):
     red = sorted(red)
     blue = sorted(blue, key=second)
-    zero_red = red[0]
-    max_red = red[-1]
-    zero_blue = blue[0]
-    max_blue = blue[-1]
+    red_path = a_star(red[0], red[-1], board_dict, board_size)
+    blue_path = a_star(blue[0], red[-1], board_dict, board_size)
+    if blue_path:
+        blue_score = len(blue_path)
+        for element in blue_path:
+            if element in blue:
+                blue_score -= 1
+        if blue_score == 0:
+            return -100000
+    else:
+        blue_score = 0
+    if red_path:
+        red_score = len(red_path)
+        for element in red_path:
+            if element in red:
+                red_score -= 1
+        if red_score == 0:
+            return 100000
+    else:
+        red_score = 0
+    return red_score - blue_score
 
-    return 0
 
 
 class Player:
@@ -97,8 +114,35 @@ class Player:
                     return "STEAL",
                 else:
                     return "PLACE", self.board_size // 2, self.board_size // 2
+        else:
+            eval_board = self.board_dict
+            red = []
+            blue = []
+            for key in list(eval_board.keys()):
+                if eval_board[key] == 'red':
+                    red.append(key)
+                else:
+                    blue.append(key)
+            scores = []
+
+            for move in self.available:
+                for returning_move in self.available:
+                    if move != returning_move:
+                        eval_board[move] = self.current_player
+                        red.append(move)
+                        if self.current_player == 'red':
+                            eval_board[returning_move] = 'blue'
+                            blue.append(move)
+                        scores.append(evaluation(red, blue, eval_board, self.board_size))
+            print(scores)
+            best_score = alpha_beta(scores, 0, len(self.available) - 2, 0, True, min_alpha, max_beta)
+            for i in range(0, len(scores)):
+                if scores[i] == best_score:
+                    move = self.available[i // (len(self.available) - 1)]
+                    return "PLACE", move[0], move[1]
         # if outside opening, generate random move from list of available ones
         random_move = self.available[np.random.randint(0, len(self.available))]
+
         return "PLACE", random_move[0], random_move[1]
 
     def turn(self, player, action):
@@ -160,4 +204,3 @@ class Player:
         # put your code here
 
 
-print("The optimal value is :", alpha_beta([3, 5, 6, 9, 1, 2, 0, -1, 2, 4, 6, 7, ], 0, 0, True, min_alpha, max_beta))
