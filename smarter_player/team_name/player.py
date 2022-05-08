@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 max_depth = 3
 branching_factor = 2
 min_alpha = -1000000
@@ -30,7 +31,7 @@ def alpha_beta(values, current_depth, index, maximizer, alpha, beta):
         return best_score
 
 
-def find_candidates(current_position):
+def generate_neighbors(current_position):
     """ Function to generate valid neighbors from a current move"""
     # Generate the six surrounding neighbors to a move
     candidates = [(current_position[0], current_position[1] + 1), (current_position[0], current_position[1] - 1),
@@ -40,7 +41,20 @@ def find_candidates(current_position):
     return candidates
 
 
-def evaluation(board_dict, board_size):
+def second(tile):
+    return tile[1]
+
+
+def evaluation(red, blue, board_size):
+    red = sorted(red)
+    blue = sorted(blue, key=second)
+    zero_red = red[0]
+    max_red = red[-1]
+    zero_blue = blue[0]
+    max_blue = blue[-1]
+
+    return 0
+
 
 class Player:
     def __init__(self, player, n):
@@ -110,7 +124,7 @@ class Player:
             self.board_dict[(action[1], action[2])] = player
             self.available.remove((action[1], action[2]))
             # find neighboring moves and begin check for capture
-            neighbors = find_candidates((action[1], action[2]))
+            neighbors = generate_neighbors((action[1], action[2]))
             opponent_neighbors = []
             for key in neighbors:
                 # find neighbors of the opposing color - there is always two of these in a capture
