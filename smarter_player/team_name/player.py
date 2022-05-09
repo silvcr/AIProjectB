@@ -1,20 +1,22 @@
 import numpy as np
 from team_name.a_star import *
 
+from AIProjectA.sandbox.a_star import find_candidates
+from AIProjectB.smarter_player.team_name.a_star import heuristic
 
 max_depth = 2
 min_alpha = -1000000
 max_beta = 1000000
 
 
-def alpha_beta(values, current_depth, branching_factor, index, maximizer, alpha, beta):
+def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_size, red, blue):
     if current_depth == max_depth:
-        return values[index]
+        return evaluation(red, blue)
     if maximizer:
         best_score = min_alpha
-        for i in range(0, branching_factor):
-            score = alpha_beta(values, current_depth + 1, branching_factor,
-                               index * branching_factor + i, False, alpha, beta)
+        new_moves = find_candidates(move, board_dict, board_size)
+        for move in new_moves:
+            score = alpha_beta(move, current_depth + 1, False, alpha, beta, board_dict, board_size, red, blue)
             best_score = max(best_score, score)
             alpha = max(best_score, alpha)
             if beta <= alpha:
@@ -22,9 +24,9 @@ def alpha_beta(values, current_depth, branching_factor, index, maximizer, alpha,
         return best_score
     else:
         best_score = max_beta
-        for i in range(0, branching_factor):
-            score = alpha_beta(values, current_depth + 1, branching_factor,
-                               index * branching_factor + i, True, alpha, beta)
+        new_moves = find_candidates(move, board_dict, board_size)
+        for move in new_moves:
+            score = alpha_beta(move, current_depth + 1, True, alpha, beta, board_dict, board_size, red, blue)
             best_score = min(best_score, score)
             beta = min(beta, best_score)
             if beta <= alpha:
@@ -46,31 +48,18 @@ def second(tile):
     return tile[1]
 
 
-def evaluation(red, blue, board_dict, board_size):
+def evaluation(board_dict, move):
     red = sorted(red)
     blue = sorted(blue, key=second)
-    red_path = a_star(red[0], red[-1], board_dict, board_size)
-    blue_path = a_star(blue[0], red[-1], board_dict, board_size)
-    if blue_path:
-        blue_score = len(blue_path)
-        for element in blue_path:
-            if element in blue:
-                blue_score -= 1
-        if blue_score == 0:
-            return -100000
+    if len(red) >= 4:
+        red_score = heuristic(red[0], red[1]) + heuristic(red[-1], red[-2])
     else:
-        blue_score = 0
-    if red_path:
-        red_score = len(red_path)
-        for element in red_path:
-            if element in red:
-                red_score -= 1
-        if red_score == 0:
-            return 100000
+        red_score = heuristic(red[0], red[-1])
+    if len(blue) >= 4:
+        blue_score = heuristic(blue[0], blue[1]) + heuristic(blue[-1], blue[-2])
     else:
-        red_score = 0
+        blue_score = heuristic(blue[0], blue[-1])
     return red_score - blue_score
-
 
 
 class Player:
@@ -124,8 +113,16 @@ class Player:
                 else:
                     blue.append(key)
             scores = []
-
-            for move in self.available:
+            moves_to_test = []
+            if self.current_player == 'red':
+                for move in red:
+                    for new_move in find_candidates(move, eval_board, self.board_size):
+                        moves_to_test.append(new_move)
+            else:
+                for move in blue:
+                    for new_move in find_candidates(move, eval_board, self.board_size):
+                        moves_to_test.append(new_move)
+            for move in moves_to_test:
                 for returning_move in self.available:
                     if move != returning_move:
                         eval_board[move] = self.current_player
@@ -133,17 +130,17 @@ class Player:
                         if self.current_player == 'red':
                             eval_board[returning_move] = 'blue'
                             blue.append(move)
-                        scores.append(evaluation(red, blue, eval_board, self.board_size))
-            print(scores)
-            best_score = alpha_beta(scores, 0, len(self.available) - 2, 0, True, min_alpha, max_beta)
+                        scores.append(evaluation(red, blue))
+            best_score = alpha_beta(scores, 0, len(moves_to_test) - 1, 0, True, min_alpha, max_beta)
+            print('best score is', best_score)
+            print('scores are', scores)
             for i in range(0, len(scores)):
                 if scores[i] == best_score:
-                    move = self.available[i // (len(self.available) - 1)]
-                    return "PLACE", move[0], move[1]
+                    move = moves_to_test[i // len(moves_to_test) - 1]
+                    return "PLACE", int(move[0]), int(move[1])
         # if outside opening, generate random move from list of available ones
-        random_move = self.available[np.random.randint(0, len(self.available))]
-
-        return "PLACE", random_move[0], random_move[1]
+            random_move = self.available[np.random.randint(0, len(self.available))]
+            return "PLACE", random_move[0], random_move[1]
 
     def turn(self, player, action):
         """
@@ -202,5 +199,3 @@ class Player:
             self.current_player = 'red'
 
         # put your code here
-
-
