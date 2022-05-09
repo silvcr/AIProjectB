@@ -1,22 +1,19 @@
 import numpy as np
-from team_name.a_star import *
 
-from AIProjectA.sandbox.a_star import find_candidates
-from AIProjectB.smarter_player.team_name.a_star import heuristic
 
-max_depth = 2
+max_depth = 3
+branching_factor = 2
 min_alpha = -1000000
 max_beta = 1000000
 
 
-def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_size, red, blue):
+def alpha_beta(values, current_depth, index, maximizer, alpha, beta):
     if current_depth == max_depth:
-        return evaluation(red, blue)
+        return values[index]
     if maximizer:
         best_score = min_alpha
-        new_moves = find_candidates(move, board_dict, board_size)
-        for move in new_moves:
-            score = alpha_beta(move, current_depth + 1, False, alpha, beta, board_dict, board_size, red, blue)
+        for i in range(0, branching_factor):
+            score = alpha_beta(values, current_depth + 1, index * branching_factor + i, False, alpha, beta)
             best_score = max(best_score, score)
             alpha = max(best_score, alpha)
             if beta <= alpha:
@@ -24,9 +21,8 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_si
         return best_score
     else:
         best_score = max_beta
-        new_moves = find_candidates(move, board_dict, board_size)
-        for move in new_moves:
-            score = alpha_beta(move, current_depth + 1, True, alpha, beta, board_dict, board_size, red, blue)
+        for i in range(0, branching_factor):
+            score = alpha_beta(values, current_depth + 1, index * branching_factor + i, True, alpha, beta)
             best_score = min(best_score, score)
             beta = min(beta, best_score)
             if beta <= alpha:
@@ -34,7 +30,7 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_si
         return best_score
 
 
-def generate_neighbors(current_position):
+def find_candidates(current_position):
     """ Function to generate valid neighbors from a current move"""
     # Generate the six surrounding neighbors to a move
     candidates = [(current_position[0], current_position[1] + 1), (current_position[0], current_position[1] - 1),
@@ -42,24 +38,6 @@ def generate_neighbors(current_position):
                   (current_position[0] - 1, current_position[1] + 1),
                   (current_position[0] + 1, current_position[1] - 1)]
     return candidates
-
-
-def second(tile):
-    return tile[1]
-
-
-def evaluation(board_dict, move):
-    red = sorted(red)
-    blue = sorted(blue, key=second)
-    if len(red) >= 4:
-        red_score = heuristic(red[0], red[1]) + heuristic(red[-1], red[-2])
-    else:
-        red_score = heuristic(red[0], red[-1])
-    if len(blue) >= 4:
-        blue_score = heuristic(blue[0], blue[1]) + heuristic(blue[-1], blue[-2])
-    else:
-        blue_score = heuristic(blue[0], blue[-1])
-    return red_score - blue_score
 
 
 class Player:
@@ -103,44 +81,9 @@ class Player:
                     return "STEAL",
                 else:
                     return "PLACE", self.board_size // 2, self.board_size // 2
-        else:
-            eval_board = self.board_dict
-            red = []
-            blue = []
-            for key in list(eval_board.keys()):
-                if eval_board[key] == 'red':
-                    red.append(key)
-                else:
-                    blue.append(key)
-            scores = []
-            moves_to_test = []
-            if self.current_player == 'red':
-                for move in red:
-                    for new_move in find_candidates(move, eval_board, self.board_size):
-                        moves_to_test.append(new_move)
-            else:
-                for move in blue:
-                    for new_move in find_candidates(move, eval_board, self.board_size):
-                        moves_to_test.append(new_move)
-            for move in moves_to_test:
-                for returning_move in self.available:
-                    if move != returning_move:
-                        eval_board[move] = self.current_player
-                        red.append(move)
-                        if self.current_player == 'red':
-                            eval_board[returning_move] = 'blue'
-                            blue.append(move)
-                        scores.append(evaluation(red, blue))
-            best_score = alpha_beta(scores, 0, len(moves_to_test) - 1, 0, True, min_alpha, max_beta)
-            print('best score is', best_score)
-            print('scores are', scores)
-            for i in range(0, len(scores)):
-                if scores[i] == best_score:
-                    move = moves_to_test[i // len(moves_to_test) - 1]
-                    return "PLACE", int(move[0]), int(move[1])
         # if outside opening, generate random move from list of available ones
-            random_move = self.available[np.random.randint(0, len(self.available))]
-            return "PLACE", random_move[0], random_move[1]
+        random_move = self.available[np.random.randint(0, len(self.available))]
+        return "PLACE", random_move[0], random_move[1]
 
     def turn(self, player, action):
         """
@@ -165,7 +108,7 @@ class Player:
             self.board_dict[(action[1], action[2])] = player
             self.available.remove((action[1], action[2]))
             # find neighboring moves and begin check for capture
-            neighbors = generate_neighbors((action[1], action[2]))
+            neighbors = find_candidates((action[1], action[2]))
             opponent_neighbors = []
             for key in neighbors:
                 # find neighbors of the opposing color - there is always two of these in a capture
@@ -199,3 +142,6 @@ class Player:
             self.current_player = 'red'
 
         # put your code here
+
+
+print("The optimal value is :", alpha_beta([3, 5, 6, 9, 1, 2, 0, -1, 2, 4, 6, 7, ], 0, 0, True, min_alpha, max_beta))
