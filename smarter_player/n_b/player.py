@@ -1,14 +1,17 @@
 import numpy as np
 from n_b.a_star import *
-
 from n_b.a_star import *
 
-max_depth = 2
+# restrain depth of search to 3. since we start with a generation of moves,
+# this is actually 4-ply
+max_depth = 3
 min_alpha = -1000000
 max_beta = 1000000
 
 
 def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_size, red, blue):
+    """Alpha-beta algorithm given the move."""
+    # return evaluation for leaf node
     if current_depth == max_depth:
         if maximizer:
             red.append(move)
@@ -16,13 +19,17 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_si
             blue.append(move)
         return evaluation(red, blue)
     if maximizer:
+        # find children
         best_score = min_alpha
         new_moves = find_candidates(move, board_dict, board_size)
         for move in new_moves:
+            # add and remove move from board_dict. This and red/blue inputs reduce the amount of processing across
+            # calls since the structures are similar
             red.append(move)
             board_dict[move] = 'red'
             score = alpha_beta(move, current_depth + 1, False, alpha, beta, board_dict, board_size, red, blue)
             board_dict.pop(move)
+            # check for alpha
             if score > best_score:
                 best_score = score
             alpha = max(best_score, alpha)
@@ -54,10 +61,12 @@ def generate_neighbors(current_position):
 
 
 def second(tile):
+    """helper to facilitate evaluation"""
     return tile[1]
 
 
 def evaluation(red, blue):
+    """dummy evaluation"""
     red = sorted(red)
     blue = sorted(blue, key=second)
     if len(red) >= 4:
@@ -115,20 +124,25 @@ class Player:
                 else:
                     return "PLACE", self.board_size // 2, self.board_size // 2
         else:
+            # middle + endgame
             red = []
             blue = []
+            # create red, and blue lists for red and blue moves to facilitate evaluation
             for key in list(self.board_dict.keys()):
                 if self.board_dict[key] == 'red':
                     red.append(key)
                 else:
                     blue.append(key)
-
             if self.current_player == 'red':
+                # generate a list of candidate moves. For now, these are only the immediately surrounding moves
+                # to the game.
                 candidates = find_candidates(self.last_red_move, self.board_dict, self.board_size)
+                # if there are not surrounding moves, get from the list of remaining available moves.
                 if not candidates:
                     candidates = self.available
                 best_score = min_alpha
                 best_move = candidates[0]
+                # run alpha beta on each candidate, and get one where the best score is guaranteed
                 for candidate in candidates:
                     score = alpha_beta(candidate, 0, True, min_alpha, max_beta,
                                        self.board_dict, self.board_size, red, blue)
