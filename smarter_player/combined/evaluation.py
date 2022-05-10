@@ -1,11 +1,14 @@
 from combined.a_star import compute_path, axial_distance, blocksMoved
 
-def calcScore(n,player,player_coords,opp_coords):
+def wallPath(n,player,player_coords,opp_coords):
 
     """ Main calculation of evaluation
     Will first file tile closest to a wall then find shortest distance from
     such tile to other wall considering other placed blocks """
     wallDist = n + 1
+
+    # Dummy Tile value: This evaluation assumes game has blocks placed
+    closestTile = (-1,-1)
 
     # Finds tile closest to a wall
     for point in player_coords:
@@ -17,26 +20,51 @@ def calcScore(n,player,player_coords,opp_coords):
     blocksLeft = wall(closestTile, n, player, opp_coords, player_coords,
          "distFromOtherWall") + wall(closestTile,n,player,opp_coords,player_coords,"distFromWall")
 
-
-    # add triangle(n,player_coords) and centreBlocks but need to figure out scoring
-
-    # Returns blocks left to win and how many blocks placed * will have to change scoring
     return blocksLeft
 
 
 
-def triangle(n,placedBlocks):
+def triangle(placedBlocks,n):
     """ Function counts how many triangles of a colour are in a board """
-    print("Triangle counting ")
-    for points in placedBlocks:
-        print(points)
-    return
+    triCount = 0
+
+    for i in range(n):
+        for j in range(i+1,n):
+            for k in range(j+1,n):
+                if (det(placedBlocks[i][0], placedBlocks[i][1],
+                        placedBlocks[j][0], placedBlocks[j][1],
+                        placedBlocks[k][0], placedBlocks[k][1])):
+                    triCount+=1
+    return triCount
 
 
+def det(x1,y1,x2,y2,x3,y3):
+    """ Returns determinant of three points """
+    return (x1 * (y2 - y3) - y1 * (x2 - x3) + 1 * (x2 * y3 - y2 * x3))
+
+
+# BUG WONT WORK
 def centreBlocks(n,placedBlocks):
-    """ Gives score on how many centre blocks there are  """
-    return
+    """ Gives how many centre blocks there are  """
+    blocks = 0
 
+    # if n is odd
+    if n % 2 > 0:
+        # Calculate blocks surrounding the centre block
+        for tile in placedBlocks:
+            if tile[0] in range(int(round(n/2))-1,round(n/2)+1) \
+                    and tile[1] in range(int(round(n/2))-1,round(n/2)+1):
+                blocks+=1
+    # if n is even
+    else:
+        for tile in placedBlocks:
+            print(tile[0])
+            print(tile[1])
+            if tile[0] in range(int(n/2)-1,int(n/2)) \
+                    and tile[1] in range(int(n/2)-1,int(n/2)):
+                blocks+=1
+    print(f"There are {blocks}")
+    return blocks
 
 
 def wall(start_coord,n,player,opp_coords,player_coords,toReturn):
@@ -97,28 +125,37 @@ def wall(start_coord,n,player,opp_coords,player_coords,toReturn):
 def winningTeam(n,player,player_coords,opp_coords):
     """Gives final evaluation of winning team """
 
+    score = 0
     if player == "b":
         opponent = "r"
     else:
         opponent = "b"
 
+    # SCORING FOR 3 FORMS OF EVALUATION
+
     # Find distance player is from winning
-    playerDist = calcScore(n,player,player_coords,opp_coords)
-    # Find distance opponent is from winning
-    opponentDist = calcScore(n,opponent,opp_coords,player_coords)
-
-    # Returns difference of how far each player is from winning and returns winning team
-    score = playerDist - opponentDist
-
-    # Higher score means opponent winning
-    # Lower score means current player winning
-    # 0 indicates a tie
-
-    if score > 0:
-        print(f"Opponent is winning")
-    elif score < 0:
-        print("Player winning")
+    # If player path is shorter than opponent then give score *need to do 0 condition too
+    if wallPath(n,player,player_coords,opp_coords) < wallPath(n,opponent,opp_coords,player_coords):
+        score+=1
     else:
-        print("Draw")
+        score-=1
+
+    # Calculating amount of triangles
+
+    if triangle(player_coords,n) > triangle(opp_coords,n):
+        score += 1
+    else:
+        score -= 1
+
+    # Calculating centre blocks
+
+    if centreBlocks(n,player_coords) > centreBlocks(n,opp_coords):
+        score += 1
+    else:
+        score -= 1
+
+
+    # Score > 0 = player winning
+    # Score < 0 = opponent winning
 
     return score
