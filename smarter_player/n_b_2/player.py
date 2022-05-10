@@ -1,16 +1,21 @@
 import numpy as np
-from n_b.a_star import *
-from n_b.a_star import *
+from n_b_2.a_star import *
+from n_b_2.a_star import *
 from copy import *
 
 # restrain depth of search to 3. since we start with a generation of moves,
 # this is actually 4-ply
-max_depth = 1
+max_depth = 2
 min_alpha = -1000000
 max_beta = 1000000
 
 
-def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dict, red, blue, killers):
+def generate_moves(board_dict, board_size, available):
+
+    return 0
+
+
+def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_size, red, blue):
     """Alpha-beta algorithm given the move."""
     # return evaluation for leaf node
     if current_depth == max_depth:
@@ -20,51 +25,33 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             blue.append(move)
         return evaluation(red, blue)
     if maximizer:
-        best_score = min_alpha
-        for move in available:
-            if move in killers[current_depth]:
-                available.remove(move)
-                available.insert(0, move)
         # find children
-        available = capture_ordering(available, board_dict, "red")
-        for move in available:
+        best_score = min_alpha
+        new_moves = find_candidates(move, board_dict, board_size)
+        for move in new_moves:
             # add and remove move from board_dict. This and red/blue inputs reduce the amount of processing across
             # calls since the structures are similar
             red.append(move)
-            available.remove(move)
-            board_dict[move] = "red"
-            score = alpha_beta(move, current_depth + 1, False, alpha, beta, available, board_dict, red, blue, killers)
-            available.append(move)
+            board_dict[move] = 'red'
+            score = alpha_beta(move, current_depth + 1, False, alpha, beta, board_dict, board_size, red, blue)
             board_dict.pop(move)
             # check for alpha
             if score > best_score:
                 best_score = score
             alpha = max(best_score, alpha)
             if beta <= alpha:
-                killers[current_depth][1] = killers[current_depth][0]
-                killers[current_depth][0] = move
                 break
         return best_score
     else:
         best_score = max_beta
-        for move in available:
-            if move in killers[current_depth]:
-                available.remove(move)
-                available.insert(0, move)
-        available = capture_ordering(available, board_dict, "blue")
-        for move in available:
+        new_moves = find_candidates(move, board_dict, board_size)
+        for move in new_moves:
             blue.append(move)
-            available.remove(move)
-            board_dict[move] = "blue"
-            score = alpha_beta(move, current_depth + 1, True, alpha, beta, available, board_dict, red, blue, killers)
-            available.append(move)
-            board_dict.pop(move)
+            score = alpha_beta(move, current_depth + 1, True, alpha, beta, board_dict, board_size, red, blue)
             best_score = min(best_score, score)
             if score < best_score:
                 best_score = score
             if beta <= alpha:
-                killers[current_depth][1] = killers[current_depth][0]
-                killers[current_depth][0] = move
                 break
         return best_score
 
@@ -89,13 +76,13 @@ def evaluation(red, blue):
     red = sorted(red)
     blue = sorted(blue, key=second)
     if len(red) >= 4:
-        red_score = -heuristic(red[0], red[1]) - heuristic(red[-1], red[-2])
+        red_score = heuristic(red[0], red[1]) + heuristic(red[-1], red[-2])
     else:
-        red_score = -heuristic(red[0], red[-1])
+        red_score = heuristic(red[0], red[-1])
     if len(blue) >= 4:
-        blue_score = -heuristic(blue[0], blue[1]) - heuristic(blue[-1], blue[-2])
+        blue_score = heuristic(blue[0], blue[1]) + heuristic(blue[-1], blue[-2])
     else:
-        blue_score = -heuristic(blue[0], blue[-1])
+        blue_score = heuristic(blue[0], blue[-1])
     return red_score - blue_score
 
 
@@ -124,21 +111,6 @@ def identify_capture(move, board_dict, player):
                         deleted.append(tile)
                         deleted.append(opposite_tile)
     return deleted
-
-
-def capture_ordering(candidates, curr_board, player):
-    captures = []
-    for i in range(0, len(candidates)):
-        curr_board[candidates[i]] = player
-        if identify_capture(candidates[i], curr_board, player):
-            captures.append(candidates[i])
-        curr_board.pop(candidates[i])
-    if captures:
-        for candidate in captures:
-            candidates.remove(candidate)
-        for candidate in captures:
-            candidates.insert(0, candidate)
-    return candidates
 
 
 class Player:
@@ -198,47 +170,38 @@ class Player:
                     red.append(key)
                 else:
                     blue.append(key)
-            candidates = deepcopy(self.available)
-            curr_board = deepcopy(self.board_dict)
-            killers = [[(), ()] for i in range(0, max_depth + 1)]
-            if self.current_player == "red":
+            if self.current_player == 'red':
                 # generate a list of candidate moves. For now, these are only the immediately surrounding moves
                 # to the game.
                 # candidates = find_candidates(self.last_red_move, self.board_dict, self.board_size)
                 # if there are not surrounding moves, get from the list of remaining available moves.
                 # if not candidates:
-                # run alpha beta on each candidate, and get one where the best score is guaranteed
+                candidates = self.available
                 best_score = min_alpha
                 best_move = candidates[0]
-                candidates = capture_ordering(candidates, curr_board, "red")
+                # run alpha beta on each candidate, and get one where the best score is guaranteed
                 for candidate in candidates:
-                    candidates.remove(candidate)
-                    curr_board[candidate] = "red"
                     score = alpha_beta(candidate, 0, True, min_alpha, max_beta,
-                                       deepcopy(candidates), curr_board, red, blue, killers)
-                    candidates.append(candidate)
-                    curr_board.pop(candidate)
+                                       self.board_dict, self.board_size, red, blue)
                     if score > best_score:
                         best_score = score
                         best_move = candidate
             else:
                 # candidates = find_candidates(self.last_blue_move, self.board_dict, self.board_size)
                 # if not candidates:
+                candidates = self.available
                 best_score = max_beta
                 best_move = candidates[0]
-                candidates = capture_ordering(candidates, curr_board, "blue")
                 for candidate in candidates:
-                    candidates.remove(candidate)
-                    curr_board[candidate] = "blue"
                     score = alpha_beta(candidate, 0, False, min_alpha, max_beta,
-                                       deepcopy(candidates), curr_board, red, blue, killers)
-                    candidates.append(candidate)
-                    curr_board.pop(candidate)
+                                       self.board_dict, self.board_size, red, blue)
                     if score < best_score:
                         best_score = score
                         best_move = candidate
             return "PLACE", best_move[0], best_move[1]
             # if outside opening, generate random move from list of available ones
+        random_move = self.available[np.random.randint(0, len(self.available))]
+        return "PLACE", random_move[0], random_move[1]
 
     def turn(self, player, action):
         """
