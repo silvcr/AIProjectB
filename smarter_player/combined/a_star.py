@@ -149,9 +149,18 @@ def hex_neighbours(coord):
     return [add_coords(coord, offset) for offset in \
         [(1, -1), (1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1)]]
 
+def print_coordinate(r, q, **kwargs):
+    """
+    Output an axial coordinate (r, q) according to the format instructions.
 
-# Will calculate cost of a new path removing those already placed
+    Any keyword arguments are passed through to the print function.
+    """
+    print(f"({r},{q})", **kwargs)
+
 def blocksMoved(player_coords,path):
+    """
+     Will calculate cost of a new path removing those already placed
+     """
     blocksMoved = len(path)
     for (r, q) in path:
         if (r,q) in player_coords:
