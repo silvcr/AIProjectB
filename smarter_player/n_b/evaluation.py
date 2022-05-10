@@ -1,199 +1,124 @@
-import numpy as np
+from n_b.a_star import compute_path, axial_distance, blocksMoved
 
+def calcScore(n,player,player_coords,opp_coords):
 
-def valid_candidate(candidate, board_dict, board_size):
-    """ Function to check if a candidate move is valid"""
-    # check if move is in board and not on a forbidden hex
-    if 0 <= candidate[0] < board_size and 0 <= candidate[1] < board_size and candidate not in board_dict.keys():
-        return True
-    else:
-        return False
-
-
-def find_candidates(current_position, board_dict, board_size):
-    """ Function to generate valid neighbors from a current move"""
-    # Generate the six surrounding neighbors to a move
-    candidates = [(current_position[0], current_position[1] + 1), (current_position[0], current_position[1] - 1),
-                  (current_position[0] + 1, current_position[1]), (current_position[0] - 1, current_position[1]),
-                  (current_position[0] - 1, current_position[1] + 1),
-                  (current_position[0] + 1, current_position[1] - 1)]
-    legal_candidates = []
-    # Filter out non-valid neighbors
-    for move in candidates:
-        if valid_candidate(move, board_dict=board_dict, board_size=board_size):
-            legal_candidates.append(move)
-    return legal_candidates
-
-
-
-# Heuristic using manhattan method changed for hex graphs *** taken from text book must ref **
-def heuristic(start, goal):
-    """ Admissible heuristic for current move"""
-
-    dx = start[0] - goal[0]
-    dy = start[1] - goal[1]
-
-    if np.sign(dx) == np.sign(dy):
-        abs(dx + dy)
-    else:
-        max(abs(dx), abs(dy))
-    return abs(start[0] - goal[0]) + abs(start[1] - goal[1])
-
-
-
-# A_star returns shortest distance between two given points ** been adjusted from Proj A so you can overlap with
-# same colour
-
-def a_star(start, goal, board_dict, board_size,player):
-    """ A* algorithm"""
-
-    # Newly added distance is how many moves are needed to reach end goal from the start goal
-    distance = 0
-
-    # Empty queues
-    open_dict = {}
-    closed_dict = {}
-    # Initiate the starting node
-    open_dict[start] = (heuristic(start, goal), 0, 'Start')
-
-    found = False
-    # While queue is non-empty
-    while open_dict:
-        # Sort the queue, O(n log n + n + n) = O(n log n)
-        ordered_keys = sorted(open_dict, key=open_dict.__getitem__)
-        candidate_key = ordered_keys[0]
-        candidate = open_dict.pop(candidate_key)
-        # Terminate search if we find the goal
-        if candidate_key == goal:
-            closed_dict[candidate_key] = candidate
-            found = True
-            break
-        else:
-            # Evaluate a move's neighbors. If it has a better f_score through this path, we reallocate
-            # the scores and predecessors to the current node
-            for move in find_candidates(candidate_key, board_dict, board_size):
-
-                # Changed from not in list to not in list OR in list and is player colour
-
-                if move not in list(closed_dict.keys()):
-                    h_score = heuristic(move, goal)
-                    g_score = candidate[1] + 1
-                    if move not in list(open_dict.keys()):
-                        open_dict[move] = (h_score + g_score, g_score, candidate_key)
-                    elif (h_score + g_score) < open_dict[move][0]:
-                        open_dict[move] = (h_score + g_score, g_score, candidate_key)
-            # Move the node to the closed queue
-            closed_dict[candidate_key] = candidate
-
-
-    # Trace the goal node through the closed queue if the goal was found
-    if found:
-        previous_node = closed_dict[goal][-1]
-        path = []
-        while previous_node != 'Start':
-            path.append(previous_node)
-            distance+=1
-            previous_node = closed_dict[previous_node][-1]
-        print(len(path) + 1)
-        for i in range(-1, -len(path) - 1, -1):
-            print(path[i])
-        print(goal)
-    else:
-        print("No solution? (was 0) ")
-
-    print(f"minimum moves from {start} to {goal } is ")
-    print(distance)
-
-    return distance
-
-""" Finds how many blocks player is from winning """
-# The use of  A star in this function is used assuming
-# 1. You can include already placed blocks (same colour) (we need to fix this part)
-# 2. Calculates how many moves is needed from start to goal (already done with "distance")
-# To do: A* doesn't consider already placed blocks --> We need to implement this in this function through using A* to compare
-
-def findDist(board_dict,n,player):
-    distance = 0
-    wallDist = n
-    minDist = n
-
-    # All commented because I need to fix A* to include already placed blocks (of player colour)
+    """ Main calculation of evaluation
+    Will first file tile closest to a wall then find shortest distance from
+    such tile to other wall considering other placed blocks """
+    wallDist = n + 1
 
     # Finds tile closest to a wall
+    for point in player_coords:
+       if wall(point,n,player,opp_coords,player_coords,"dist") < wallDist:
+           closestTile = point
+           wallDist = wall(point,n,player,opp_coords,player_coords,"dist")
 
-    #for element in board_dict:
-        #if (board_dict[element] == player):
-            # if placed tile has closer distance to wall than other  , replace
-            #if (a_star(element,closestWall,board_dict,n,player) < wallDist:
-            # minDist = a_star(element,board_dict,n,player)
-            # minTile = element
+    # Distance tile is from one wall and to the other wall
+    blocksLeft = wall(closestTile, n, player, opp_coords, player_coords,
+         "distFromOtherWall") + wall(closestTile,n,player,opp_coords,player_coords,"distFromWall")
 
-    # Finding winning path * I actually have to fix this but for now A* will manage it and calc winning player
 
-    #for element in board_dict:
-        #if (board_dict[element] == player):
-            #a_star(minTile, element, board_dict,n) < minDist
-            # minDist = a_star(minTile, element, board_dict,n)
+    # add triangle(n,player_coords) and centreBlocks but need to figure out scoring
 
-    return distance
+    # Returns blocks left to win and how many blocks placed * will have to change scoring
+    return blocksLeft
 
-""" Gives list of tiles on each end not blocked for given player colour  """
 
-# Might have to do two lists for each side but should'nt need to
-# Is used to find goal point for the chain
 
-def wall(board_dict,n,player):
+def triangle(n,placedBlocks):
+    """ Function counts how many triangles of a colour are in a board """
+    print("Triangle counting ")
+    for points in placedBlocks:
+        print(points)
+    return
 
-    wall = {}
+
+def centreBlocks(n,placedBlocks):
+    """ Gives score on how many centre blocks there are  """
+    return
+
+
+
+def wall(start_coord,n,player,opp_coords,player_coords,toReturn):
+
+    """ Finds closest non opponent occupied wall and distance from it - not optimised should fix """
     i = 0
-    # Adding wall values for  player
-    if player == "b":
-        while i in range(n):
-            # if wall is not taken by red then add to wall dictionary
-            if board_dict[(0,i)] != "r":
-                wall[(0,i)] = "b"
+    wallOneDist = n+1
+    wallTwoDist = n+1
+    shortestDist = n + 1
 
-            if board_dict[(n,i)] != "r":
-                wall[(n,i)] = "b"
-            i+=1
+    # Run through wall for given player
+    while i in range(n):
+        if player == "b":
+            # Comparing path lengths between coord and walls: Allocate new close wall when shorter distance
+            # found
 
-    # Adding wall values for red player
+            # Finding two walls close to blue
+            if blocksMoved(player_coords,compute_path(n, start_coord, (0,i), opp_coords, axial_distance)) < wallOneDist:
+                wallOneDist = blocksMoved(player_coords,compute_path(n, start_coord, (0,i), opp_coords, axial_distance))
+            # Checking against right wall
+            if blocksMoved(player_coords,compute_path(n, start_coord, (n, i), opp_coords, axial_distance)) < wallTwoDist:
+                wallTwoDist = blocksMoved(player_coords,compute_path(n, start_coord, (n, i), opp_coords, axial_distance))
+
+        # Find two walls close to red
+        else:
+            # Checking bottom wall
+            if blocksMoved(player_coords,compute_path(n, start_coord, (i,0), opp_coords, axial_distance)) < wallOneDist:
+                wallOneDist = blocksMoved(player_coords,compute_path(n, start_coord, (i,0), opp_coords, axial_distance))
+            # Checking top wall
+            if blocksMoved(player_coords,compute_path(n, start_coord, (i,n), opp_coords, axial_distance)) < wallTwoDist:
+                wallTwoDist = blocksMoved(player_coords,compute_path(n, start_coord, (i,n), opp_coords, axial_distance))
+        i+=1
+
+    # Assign wall values * can remove big chunk, just keeping now
+    if wallOneDist < wallTwoDist:
+        distFromWall = wallOneDist
+        distFromOtherWall = wallTwoDist
+
+    elif wallOneDist > wallTwoDist:
+        distFromWall = wallTwoDist
+        distFromOtherWall = wallOneDist
+
     else:
-        while i in range(n):
-            # if wall is not taken by blue then add to wall dictionary
-            if board_dict[(i, 0)] != "b":
-                wall[(i, 0)] = "b"
+        # Both same distance
+        return wallOneDist
 
-            if board_dict[(i, n)] != "b":
-                wall[(i, n)] = "b"
-            i += 1
-    return wall
+    if toReturn == "distFromWall":
+        return distFromWall
+    elif toReturn == "distFromOtherWall":
+        return distFromOtherWall
+    else:
+        return distFromWall
 
-""" Gives final evaluation of winning team """
+# Score > 0 indicates opponent winning
+# Score < 0 Indicates player winning
+# Score = 0 indicates a draw
 
-def winningTeam(board_dict,n,currPlayer):
+def winningTeam(n,player,player_coords,opp_coords):
+    """Gives final evaluation of winning team """
 
-    if currPlayer == "b":
+    if player == "b":
         opponent = "r"
     else:
         opponent = "b"
 
-    # Find distance currplayer is from winning
-    currDist = findDist(board_dict,n,currPlayer)
+    # Find distance player is from winning
+    playerDist = calcScore(n,player,player_coords,opp_coords)
     # Find distance opponent is from winning
-    opponentDist = findDist(board_dict,n,opponent)
+    opponentDist = calcScore(n,opponent,opp_coords,player_coords)
 
     # Returns difference of how far each player is from winning and returns winning team
-    score = currDist - opponentDist
+    score = playerDist - opponentDist
 
-    if (score < 0):
-        print(f"Player {currPlayer} is winning with {currDist} moves away\n")
-        return currPlayer
+    # Higher score means opponent winning
+    # Lower score means current player winning
+    # 0 indicates a tie
 
-    elif (score > 0):
-        print(f"Player {opponent} is winning with {opponentDist} moves away\n")
-        return opponent
-
+    if score > 0:
+        print(f"Opponent is winning")
+    elif score < 0:
+        print("Player winning")
     else:
-        print("Draw\n")
-        return "draw"
+        print("Draw")
+
+    return score

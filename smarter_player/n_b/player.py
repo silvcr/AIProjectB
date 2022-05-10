@@ -1,6 +1,6 @@
 import numpy as np
 from n_b.a_star import *
-from n_b.a_star import *
+from n_b.evaluation import *
 from copy import *
 
 # restrain depth of search to 3. since we start with a generation of moves,
@@ -10,15 +10,16 @@ min_alpha = -1000000
 max_beta = 1000000
 
 
-def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dict, red, blue, killers):
+def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dict, board_size, red, blue, killers):
     """Alpha-beta algorithm given the move."""
     # return evaluation for leaf node
     if current_depth == max_depth:
         if maximizer:
             red.append(move)
+            return winningTeam(board_size, "red", red, blue)
         else:
             blue.append(move)
-        return evaluation(red, blue)
+            return winningTeam(board_size, "blue", blue, red)
     if maximizer:
         best_score = min_alpha
         for move in available:
@@ -33,7 +34,8 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             red.append(move)
             available.remove(move)
             board_dict[move] = "red"
-            score = alpha_beta(move, current_depth + 1, False, alpha, beta, available, board_dict, red, blue, killers)
+            score = alpha_beta(move, current_depth + 1, False, alpha, beta, available,
+                               board_dict, board_size, red, blue, killers)
             available.append(move)
             board_dict.pop(move)
             # check for alpha
@@ -56,7 +58,8 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             blue.append(move)
             available.remove(move)
             board_dict[move] = "blue"
-            score = alpha_beta(move, current_depth + 1, True, alpha, beta, available, board_dict, red, blue, killers)
+            score = alpha_beta(move, current_depth + 1, True, alpha, beta, available,
+                               board_dict, board_size, red, blue, killers)
             available.append(move)
             board_dict.pop(move)
             best_score = min(best_score, score)
@@ -215,7 +218,7 @@ class Player:
                     candidates.remove(candidate)
                     curr_board[candidate] = "red"
                     score = alpha_beta(candidate, 0, True, min_alpha, max_beta,
-                                       deepcopy(candidates), curr_board, red, blue, killers)
+                                       deepcopy(candidates), curr_board, self.board_size, red, blue, killers)
                     candidates.append(candidate)
                     curr_board.pop(candidate)
                     if score > best_score:
@@ -231,7 +234,7 @@ class Player:
                     candidates.remove(candidate)
                     curr_board[candidate] = "blue"
                     score = alpha_beta(candidate, 0, False, min_alpha, max_beta,
-                                       deepcopy(candidates), curr_board, red, blue, killers)
+                                       deepcopy(candidates), curr_board, self.board_size, red, blue, killers)
                     candidates.append(candidate)
                     curr_board.pop(candidate)
                     if score < best_score:
