@@ -1,12 +1,18 @@
 import numpy as np
 from n_b.a_star import *
 from n_b.a_star import *
+from copy import *
 
 # restrain depth of search to 3. since we start with a generation of moves,
 # this is actually 4-ply
-max_depth = 3
+max_depth = 2
 min_alpha = -1000000
 max_beta = 1000000
+
+
+def generate_moves(board_dict, board_size, available):
+
+    return 0
 
 
 def alpha_beta(move, current_depth, maximizer, alpha, beta, board_dict, board_size, red, blue):
@@ -80,6 +86,33 @@ def evaluation(red, blue):
     return red_score - blue_score
 
 
+def identify_capture(move, board_dict, player):
+    neighbors = generate_neighbors((move[0], move[1]))
+    opponent_neighbors = []
+    for key in neighbors:
+        # find neighbors of the opposing color - there is always two of these in a capture
+        if key in board_dict.keys():
+            if board_dict[key] != player:
+                opponent_neighbors.append(key)
+    deleted = []
+    # check if the remaining opposing cell is of the current test's color
+    for tile in opponent_neighbors:
+        for opposite_tile in opponent_neighbors:
+            # if the cells are not opposite each other, or the same cell, we check
+            if abs(tile[0] - opposite_tile[0]) % 2 != 0 or abs(tile[1] - opposite_tile[1]) % 2 != 0:
+                # find opposite cell two candidate by computing offsets
+                # this is just main tile + (neighboring tiles - main tiles) simplified
+                candidate_check = (tile[0] + opposite_tile[0] - move[0],
+                                   tile[1] + opposite_tile[1] - move[1])
+                # if the cell is of the current test's color, capture has been made - record and update
+                # accordingly
+                if candidate_check in list(board_dict.keys()):
+                    if board_dict[candidate_check] == player:
+                        deleted.append(tile)
+                        deleted.append(opposite_tile)
+    return deleted
+
+
 class Player:
     def __init__(self, player, n):
         """
@@ -116,7 +149,11 @@ class Player:
         if turn_count == 0:
             if self.current_player == 'red':
                 if len(self.board_dict.keys()) == 0:
-                    return "PLACE", self.board_size - 3, self.board_size - 1
+                    openers = [(self.board_size - 1, self.board_size - 1), (0, 0),
+                               (self.board_size - 2, self.board_size - 1), (0, 1),
+                               (self.board_size - 1, self.board_size - 2), (1, 0)]
+                    move = openers[np.random.randint(0, len(openers))]
+                    return "PLACE", move[0], move[1]
             else:
                 red_move = list(self.board_dict.keys())[0]
                 if self.board_size - 2 >= red_move[0] >= 1 and self.board_size - 2 >= red_move[1] >= 1:
@@ -136,10 +173,10 @@ class Player:
             if self.current_player == 'red':
                 # generate a list of candidate moves. For now, these are only the immediately surrounding moves
                 # to the game.
-                candidates = find_candidates(self.last_red_move, self.board_dict, self.board_size)
+                # candidates = find_candidates(self.last_red_move, self.board_dict, self.board_size)
                 # if there are not surrounding moves, get from the list of remaining available moves.
-                if not candidates:
-                    candidates = self.available
+                # if not candidates:
+                candidates = self.available
                 best_score = min_alpha
                 best_move = candidates[0]
                 # run alpha beta on each candidate, and get one where the best score is guaranteed
@@ -150,9 +187,9 @@ class Player:
                         best_score = score
                         best_move = candidate
             else:
-                candidates = find_candidates(self.last_blue_move, self.board_dict, self.board_size)
-                if not candidates:
-                    candidates = self.available
+                # candidates = find_candidates(self.last_blue_move, self.board_dict, self.board_size)
+                # if not candidates:
+                candidates = self.available
                 best_score = max_beta
                 best_move = candidates[0]
                 for candidate in candidates:
@@ -194,29 +231,8 @@ class Player:
             self.board_dict[(action[1], action[2])] = player
             self.available.remove((action[1], action[2]))
             # find neighboring moves and begin check for capture
-            neighbors = generate_neighbors((action[1], action[2]))
-            opponent_neighbors = []
-            for key in neighbors:
-                # find neighbors of the opposing color - there is always two of these in a capture
-                if key in self.board_dict.keys():
-                    if self.board_dict[key] != player:
-                        opponent_neighbors.append(key)
-            deleted = []
             # check if the remaining opposing cell is of the current test's color
-            for tile in opponent_neighbors:
-                for opposite_tile in opponent_neighbors:
-                    # if the cells are not opposite each other, or the same cell, we check
-                    if abs(tile[0] - opposite_tile[0]) % 2 != 0 or abs(tile[1] - opposite_tile[1]) % 2 != 0:
-                        # find opposite cell two candidate by computing offsets
-                        # this is just main tile + (neighboring tiles - main tiles) simplified
-                        candidate_check = (tile[0] + opposite_tile[0] - action[1],
-                                           tile[1] + opposite_tile[1] - action[2])
-                        # if the cell is of the current test's color, capture has been made - record and update
-                        # accordingly
-                        if candidate_check in list(self.board_dict.keys()):
-                            if self.board_dict[candidate_check] == player:
-                                deleted.append(tile)
-                                deleted.append(opposite_tile)
+            deleted = identify_capture((action[1], action[2]), deepcopy(self.board_dict), player)
             if deleted:
                 deleted = list(dict.fromkeys(deleted))
                 for key in deleted:

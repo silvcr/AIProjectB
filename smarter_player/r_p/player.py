@@ -1,4 +1,5 @@
 import numpy as np
+from copy import *
 
 
 max_depth = 3
@@ -69,18 +70,13 @@ class Player:
         # put your code here
         # a turn is noted as after both red and blue has moved.
         turn_count = len(self.board_dict.keys()) // 2
+        if turn_count == 0:
+            available = deepcopy(self.available)
+            available.remove((1, 1))
+            random_move = available[np.random.randint(0, len(available))]
+            return "PLACE", random_move[0], random_move[1]
         # opening book move, mostly applicable for n >= 8 as to make the game equal (avoid swap)
         # work in progress
-        if turn_count == 0:
-            if self.current_player == 'red':
-                if len(self.board_dict.keys()) == 0:
-                    return "PLACE", self.board_size - 3, self.board_size - 1
-            else:
-                red_move = list(self.board_dict.keys())[0]
-                if self.board_size - 2 >= red_move[0] >= 1 and self.board_size - 2 >= red_move[1] >= 1:
-                    return "STEAL",
-                else:
-                    return "PLACE", self.board_size // 2, self.board_size // 2
         # if outside opening, generate random move from list of available ones
         random_move = self.available[np.random.randint(0, len(self.available))]
         return "PLACE", random_move[0], random_move[1]
