@@ -76,7 +76,7 @@ def wall(start_coord,n,player,opp_coords,player_coords,toReturn):
 
     # Run through wall for given player
     while i in range(n):
-        if player == "b":
+        if player == "blue":
             # Comparing path lengths between coord and walls: Allocate new close wall when shorter distance
             # found
 
