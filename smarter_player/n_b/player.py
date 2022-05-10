@@ -5,7 +5,7 @@ from copy import *
 
 # restrain depth of search to 3. since we start with a generation of moves,
 # this is actually 4-ply
-max_depth = 1
+max_depth = 3
 min_alpha = -1000000
 max_beta = 1000000
 
@@ -26,11 +26,13 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
 
     if maximizer:
         best_score = min_alpha
+        # find children
+        # check for non-capture killers
         for move in available:
             if move in killers[current_depth]:
                 available.remove(move)
                 available.insert(0, move)
-        # find children
+        # check for captures
         available = capture_ordering(available, board_dict, "red")
         for move in available:
             # add and remove move from board_dict. This and red/blue inputs reduce the amount of processing across
@@ -47,6 +49,7 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             if score > best_score:
                 best_score = score
             alpha = max(best_score, alpha)
+            # if we reach cut-off, the move causing it will become a killer at that depth.
             if beta <= alpha:
                 killers[current_depth][1] = killers[current_depth][0]
                 killers[current_depth][0] = move
@@ -88,27 +91,8 @@ def generate_neighbors(current_position):
     return candidates
 
 
-def second(tile):
-    """helper to facilitate evaluation"""
-    return tile[1]
-
-
-def evaluation(red, blue):
-    """dummy evaluation"""
-    red = sorted(red)
-    blue = sorted(blue, key=second)
-    if len(red) >= 4:
-        red_score = -heuristic(red[0], red[1]) - heuristic(red[-1], red[-2])
-    else:
-        red_score = -heuristic(red[0], red[-1])
-    if len(blue) >= 4:
-        blue_score = -heuristic(blue[0], blue[1]) - heuristic(blue[-1], blue[-2])
-    else:
-        blue_score = -heuristic(blue[0], blue[-1])
-    return red_score - blue_score
-
-
 def identify_capture(move, board_dict, player):
+    """identify captures given a move and the current board"""
     neighbors = generate_neighbors((move[0], move[1]))
     opponent_neighbors = []
     for key in neighbors:
@@ -136,6 +120,7 @@ def identify_capture(move, board_dict, player):
 
 
 def capture_ordering(candidates, curr_board, player):
+    """order captures to be top priority"""
     captures = []
     for i in range(0, len(candidates)):
         curr_board[candidates[i]] = player
@@ -182,7 +167,7 @@ class Player:
         # a turn is noted as after both red and blue has moved.
         turn_count = len(self.board_dict.keys()) // 2
         # opening book move, mostly applicable for n >= 8 as to make the game equal (avoid swap)
-        # work in progress
+        # we play from a random set of openers to maintain some randomness, avoid traps.
         if turn_count == 0:
             if self.current_player == 'red':
                 if len(self.board_dict.keys()) == 0:
@@ -192,6 +177,7 @@ class Player:
                     move = openers[np.random.randint(0, len(openers))]
                     return "PLACE", move[0], move[1]
             else:
+                # steal central moves
                 red_move = list(self.board_dict.keys())[0]
                 if self.board_size - 2 >= red_move[0] >= 1 and self.board_size - 2 >= red_move[1] >= 1:
                     return "STEAL",
@@ -209,8 +195,9 @@ class Player:
                     blue.append(key)
             candidates = deepcopy(self.available)
             curr_board = deepcopy(self.board_dict)
+            # greedy element, activates when board is less than half populated
             if len(list(self.board_dict.keys())) < (self.board_size / 2):
-                best_moves = candidates[0]
+                best_move = candidates[0]
                 if self.current_player == "red":
                     candidates = capture_ordering(candidates, curr_board, "red")
                     best_score = -100000
@@ -233,7 +220,7 @@ class Player:
                             best_score = score
                             best_move = move
                     return "PLACE", best_move[0], best_move[1]
-
+            # alpha beta algorithm for other cases.
             killers = [[(), ()] for i in range(0, max_depth + 1)]
             if self.current_player == "red":
                 # generate a list of candidate moves. For now, these are only the immediately surrounding moves
