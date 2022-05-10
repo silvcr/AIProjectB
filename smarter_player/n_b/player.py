@@ -16,10 +16,14 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
     if current_depth == max_depth:
         if maximizer:
             red.append(move)
-            return winningTeam(board_size, "red", red, blue)
+            score = winningTeam(board_size, "red", red, blue)
+            red.pop(-1)
         else:
             blue.append(move)
-            return winningTeam(board_size, "blue", blue, red)
+            score = winningTeam(board_size, "red", red, blue)
+            blue.pop(-1)
+        return(score)
+
     if maximizer:
         best_score = min_alpha
         for move in available:
@@ -36,6 +40,7 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             board_dict[move] = "red"
             score = alpha_beta(move, current_depth + 1, False, alpha, beta, available,
                                board_dict, board_size, red, blue, killers)
+            red.pop(-1)
             available.append(move)
             board_dict.pop(move)
             # check for alpha
@@ -60,6 +65,7 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, available, board_dic
             board_dict[move] = "blue"
             score = alpha_beta(move, current_depth + 1, True, alpha, beta, available,
                                board_dict, board_size, red, blue, killers)
+            blue.pop(-1)
             available.append(move)
             board_dict.pop(move)
             best_score = min(best_score, score)
@@ -203,6 +209,31 @@ class Player:
                     blue.append(key)
             candidates = deepcopy(self.available)
             curr_board = deepcopy(self.board_dict)
+            if len(list(self.board_dict.keys())) < (self.board_size / 2):
+                best_moves = candidates[0]
+                if self.current_player == "red":
+                    candidates = capture_ordering(candidates, curr_board, "red")
+                    best_score = -100000
+                    for move in candidates:
+                        red.append(move)
+                        score = winningTeam(self.board_size, "red", red, blue)
+                        red.pop(-1)
+                        if score > best_score:
+                            best_score = score
+                            best_move = move
+                    return "PLACE", best_move[0], best_move[1]
+                else:
+                    candidates = capture_ordering(candidates, curr_board, "blue")
+                    best_score = 100000
+                    for move in candidates:
+                        blue.append(move)
+                        score = winningTeam(self.board_size, "red", red, blue)
+                        blue.pop(-1)
+                        if score < best_score:
+                            best_score = score
+                            best_move = move
+                    return "PLACE", best_move[0], best_move[1]
+
             killers = [[(), ()] for i in range(0, max_depth + 1)]
             if self.current_player == "red":
                 # generate a list of candidate moves. For now, these are only the immediately surrounding moves

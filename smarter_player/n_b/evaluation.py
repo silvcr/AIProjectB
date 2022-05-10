@@ -97,10 +97,10 @@ def wall(start_coord,n,player,opp_coords,player_coords,toReturn):
 def winningTeam(n,player,player_coords,opp_coords):
     """Gives final evaluation of winning team """
 
-    if player == "b":
-        opponent = "r"
+    if player == "blue":
+        opponent = "red"
     else:
-        opponent = "b"
+        opponent = "blue"
 
     # Find distance player is from winning
     playerDist = calcScore(n,player,player_coords,opp_coords)
@@ -108,17 +108,17 @@ def winningTeam(n,player,player_coords,opp_coords):
     opponentDist = calcScore(n,opponent,opp_coords,player_coords)
 
     # Returns difference of how far each player is from winning and returns winning team
-    score = playerDist - opponentDist
+    score = opponentDist - playerDist
 
     # Higher score means opponent winning
     # Lower score means current player winning
     # 0 indicates a tie
 
-    if score > 0:
-        print(f"Opponent is winning")
-    elif score < 0:
-        print("Player winning")
-    else:
-        print("Draw")
+    # if score > 0:
+    #     print(f"Opponent is winning")
+    # elif score < 0:
+    #     print("Player winning")
+    # else:
+    #     print("Draw")
 
     return score
