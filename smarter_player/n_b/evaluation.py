@@ -111,4 +111,4 @@ def winningTeam(n,player,player_coords,opp_coords):
     tilesDiff = len(player_coords) - len(opp_coords)
 
     # Returning overall scoring with weighting accordance to importance of evaluation
-    return wallPathDiff + 0.5 * centreDiff + 0.3 * tilesDiff
+    return  wallPathDiff + 0.6 * tilesDiff + 0.3 * centreDiff
