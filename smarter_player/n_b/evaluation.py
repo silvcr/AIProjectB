@@ -89,7 +89,6 @@ def centreBlocks(n,placedBlocks):
 def winningTeam(n,player,player_coords,opp_coords):
     """Gives final evaluation of winning team """
 
-    score = 0
     if player == "b":
         opponent = "r"
     else:
@@ -97,36 +96,19 @@ def winningTeam(n,player,player_coords,opp_coords):
 
     # SCORING FOR 4 FORMS OF EVALUATION
 
-    # Find distance player is from winning
-    # If player path is shorter than opponent then give score *need to do 0 condition too
-    if wallPath(n,player,player_coords,opp_coords) < wallPath(n,opponent,opp_coords,player_coords):
-        score+=2
-    elif wallPath(n,player,player_coords,opp_coords) > wallPath(n,opponent,opp_coords,player_coords):
-       score-=2
+    # Difference of how far player is from forming a chain and then blue
+    # Note it is opponent - player in this case as we want less blocks in this situation
+    wallPathDiff = wallPath(n,opponent,opp_coords,player_coords) - wallPath(n,player,player_coords,opp_coords)
+
+    # Difference of how many triangles on board for each player
+    # triangleDiff = triangle(player_coords) - triangle(opp_coords)
+
+    # Difference for how many centre blocks are for each player
+    centreDiff =  centreBlocks(n,player_coords) - centreBlocks(n,opp_coords)
 
 
-    # Calculating amount of triangles : Score a point for having more triangles
+    # Diff between how many tiles each player has on the board
+    tilesDiff = len(player_coords) - len(opp_coords)
 
-    #if triangle(player_coords) > triangle(opp_coords):
-    #    score += 1
-    #elif triangle(player_coords) < triangle(opp_coords):
-    #    score -= 1
-
-    # Calculating centre blocks: Score a point for having more centre blocks
-
-    if centreBlocks(n,player_coords) > centreBlocks(n,opp_coords):
-        score += 1
-    elif centreBlocks(n,player_coords) < centreBlocks(n,opp_coords):
-        score -= 1
-
-    # Scoring based on amount of tiles player has on board
-
-    if len(player_coords) > len(opp_coords):
-        score+=1
-    elif len(player_coords) < len(opp_coords):
-        score-=1
-
-    # Score > 0 = player winning
-    # Score < 0 = opponent winning
-
-    return score
+    # Returning overall scoring with weighting accordance to importance of evaluation
+    return wallPathDiff + 0.5 * centreDiff + 0.3 * tilesDiff
