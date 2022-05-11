@@ -1,4 +1,4 @@
-from n_b.a_star import compute_path, axial_distance, blocksMoved
+from N_B.a_star import compute_path, axial_distance, blocksMoved
 
 def wallPath(n,player,player_coords,opp_coords):
 
@@ -111,4 +111,4 @@ def winningTeam(n,player,player_coords,opp_coords):
     tilesDiff = len(player_coords) - len(opp_coords)
 
     # Returning overall scoring with weighting accordance to importance of evaluation
-    return  wallPathDiff + 0.6 * tilesDiff + 0.3 * centreDiff
+    return wallPathDiff + 0.6 * tilesDiff + 0.4 * centreDiff

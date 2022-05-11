@@ -1,6 +1,6 @@
 import numpy as np
-from n_b.a_star import *
-from n_b.evaluation import *
+from N_B.a_star import *
+from N_B.evaluation import *
 from copy import *
 
 # initialize alpha and beta values
@@ -259,6 +259,8 @@ class Player:
                         if deleted:
                             for element in deleted:
                                 blue.remove(element)
+                        if len(blue) == 0:
+                            blue.append(deleted[0])
                         score = winningTeam(self.board_size, "red", red, blue)
                         if deleted:
                             for element in deleted:
@@ -276,6 +278,8 @@ class Player:
                         if deleted:
                             for element in deleted:
                                 red.remove(element)
+                        if len(red) == 0:
+                            red.append(deleted[0])
                         score = winningTeam(self.board_size, "red", red, blue)
                         if deleted:
                             for element in deleted:
