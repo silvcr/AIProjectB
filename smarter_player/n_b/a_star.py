@@ -13,7 +13,13 @@ def find_candidates(current_position, board_dict, board_size):
     candidates = [(current_position[0], current_position[1] + 1), (current_position[0], current_position[1] - 1),
                   (current_position[0] + 1, current_position[1]), (current_position[0] - 1, current_position[1]),
                   (current_position[0] - 1, current_position[1] + 1),
-                  (current_position[0] + 1, current_position[1] - 1)]
+                  (current_position[0] + 1, current_position[1] - 1),
+                  (current_position[0] + 1, current_position[1] - 2),
+                  (current_position[0] - 1, current_position[1] + 2),
+                  (current_position[0] + 2, current_position[0] - 1),
+                  (current_position[0] - 2, current_position[0] + 1),
+                  (current_position[0] + 1, current_position[1] + 1),
+                  (current_position[0] - 1, current_position[1] - 1)]
     legal_candidates = []
     # Filter out non-valid neighbors
     for move in candidates:
