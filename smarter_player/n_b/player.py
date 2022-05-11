@@ -19,7 +19,8 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, last_moves,
             red.append(move)
         else:
             blue.append(move)
-        return evaluation(red, blue)
+        return winningTeam(board_size,"r",red,blue)
+
     if maximizer:
         best_score = min_alpha
         available = find_candidates(last_moves[0], board_dict, board_size) + find_candidates(last_moves[1],
@@ -242,8 +243,9 @@ class Player:
                                        last_moves, curr_board, self.board_size, red, blue, killers)
                     curr_board.pop(candidate)
                     if score < best_score:
-                        best_score = score
-                        best_move = candidate
+                        if candidate in self.available:
+                            best_score = score
+                            best_move = candidate
             return "PLACE", best_move[0], best_move[1]
             # if outside opening, generate random move from list of available ones
 

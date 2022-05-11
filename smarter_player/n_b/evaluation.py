@@ -107,10 +107,10 @@ def winningTeam(n,player,player_coords,opp_coords):
 
     # Calculating amount of triangles : Score a point for having more triangles
 
-    if triangle(player_coords) > triangle(opp_coords):
-        score += 1
-    elif triangle(player_coords) < triangle(opp_coords):
-        score -= 1
+    #if triangle(player_coords) > triangle(opp_coords):
+    #    score += 1
+    #elif triangle(player_coords) < triangle(opp_coords):
+    #    score -= 1
 
     # Calculating centre blocks: Score a point for having more centre blocks
 
