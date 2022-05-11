@@ -95,14 +95,14 @@ def winningTeam(n,player,player_coords,opp_coords):
     else:
         opponent = "b"
 
-    # SCORING FOR 3 FORMS OF EVALUATION
+    # SCORING FOR 4 FORMS OF EVALUATION
 
     # Find distance player is from winning
     # If player path is shorter than opponent then give score *need to do 0 condition too
     if wallPath(n,player,player_coords,opp_coords) < wallPath(n,opponent,opp_coords,player_coords):
-        score+=1
+        score+=2
     elif wallPath(n,player,player_coords,opp_coords) > wallPath(n,opponent,opp_coords,player_coords):
-       score-=1
+       score-=2
 
 
     # Calculating amount of triangles : Score a point for having more triangles
@@ -118,6 +118,13 @@ def winningTeam(n,player,player_coords,opp_coords):
         score += 1
     elif centreBlocks(n,player_coords) < centreBlocks(n,opp_coords):
         score -= 1
+
+    # Scoring based on amount of tiles player has on board
+
+    if len(player_coords) > len(opp_coords):
+        score+=1
+    elif len(player_coords) < len(opp_coords):
+        score-=1
 
     # Score > 0 = player winning
     # Score < 0 = opponent winning
