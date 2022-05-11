@@ -27,6 +27,10 @@ def find_candidates(current_position, board_dict, board_size):
             legal_candidates.append(move)
     return legal_candidates
 
+
+def heuristic(start, goal):
+    """ Admissible heuristic for current move"""
+    return abs(start[0] - goal[0]) + abs(start[1] - goal[1])
 """
 Altered version of a_star from sample solution in Project A in COMP30024 Sem 1 2022
 """

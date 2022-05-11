@@ -1,11 +1,11 @@
 import numpy as np
 from n_b.a_star import *
-from n_b.a_star import *
+from n_b.evaluation import *
 from copy import *
 
-# restrain depth of search to 3. since we start with a generation of moves,
-# this is actually 4-ply
-max_depth = 1
+# restrain depth of search. since we start with a generation of moves,
+# this is actually 3-ply
+max_depth = 2
 min_alpha = -1000000
 max_beta = 1000000
 
@@ -39,7 +39,6 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, last_moves,
             score = alpha_beta(move, current_depth + 1, False, alpha, beta, last_moves,
                                board_dict, board_size, red, blue, killers)
             red.remove(move)
-            available.append(move)
             board_dict.pop(move)
             # check for alpha
             if score > best_score:
@@ -61,17 +60,14 @@ def alpha_beta(move, current_depth, maximizer, alpha, beta, last_moves,
         available = capture_ordering(available, board_dict, "blue")
         for move in available:
             blue.append(move)
-            available.remove(move)
             board_dict[move] = "blue"
             last_moves[1] = move
             score = alpha_beta(move, current_depth + 1, True, alpha, beta, last_moves,
                                board_dict, board_size, red, blue, killers)
             blue.remove(move)
-            available.append(move)
             board_dict.pop(move)
             best_score = min(best_score, score)
-            if score < best_score:
-                best_score = score
+            beta = min(best_score, beta)
             if beta <= alpha:
                 killers[current_depth][1] = killers[current_depth][0]
                 killers[current_depth][0] = move
@@ -225,12 +221,10 @@ class Player:
                 best_move = candidates[0]
                 candidates = capture_ordering(candidates, curr_board, "red")
                 for candidate in candidates:
-                    candidates.remove(candidate)
                     curr_board[candidate] = "red"
                     last_moves[0] = candidate
-                    score = alpha_beta(candidate, 0, True, min_alpha, max_beta,
+                    score = alpha_beta(candidate, 0, False, min_alpha, max_beta,
                                        last_moves, curr_board, self.board_size, red, blue, killers)
-                    candidates.append(candidate)
                     curr_board.pop(candidate)
                     if score > best_score:
                         best_score = score
@@ -242,12 +236,10 @@ class Player:
                 best_move = candidates[0]
                 candidates = capture_ordering(candidates, curr_board, "blue")
                 for candidate in candidates:
-                    candidates.remove(candidate)
                     curr_board[candidate] = "blue"
                     last_moves[1] = candidate
-                    score = alpha_beta(candidate, 0, False, min_alpha, max_beta,
+                    score = alpha_beta(candidate, 0, True, min_alpha, max_beta,
                                        last_moves, curr_board, self.board_size, red, blue, killers)
-                    candidates.append(candidate)
                     curr_board.pop(candidate)
                     if score < best_score:
                         best_score = score

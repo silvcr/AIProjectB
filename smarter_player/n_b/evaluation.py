@@ -125,10 +125,10 @@ def winningTeam(n,player,player_coords,opp_coords):
     """Gives final evaluation of winning team """
 
     score = 0
-    if player == "b":
-        opponent = "r"
+    if player == "blue":
+        opponent = "red"
     else:
-        opponent = "b"
+        opponent = "blue"
 
     # SCORING FOR 3 FORMS OF EVALUATION
 
